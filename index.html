@@ -1,0 +1,582 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Draft Night Board</title>
+<style>html{color-scheme:light}body{margin:0;font:14px/1.45 system-ui,-apple-system,"Segoe UI",sans-serif}img{max-width:100%}[hidden]{display:none!important}</style>
+</head><body>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Saira+Condensed:wght@600;800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap">
+<style>
+/* Layout: scoreboard header strip, then board (left) + war-room panel (right); stacks on phone */
+:root{
+  --bg:#f3f4f2; --panel:#ffffff; --ink:#16202b; --muted:#5c6773; --line:#dde1e3;
+  --accent:#d9480f; --accent-soft:#fdebe2; --mine:#0f7b6c; --mine-soft:#e0f3ef;
+  --warn:#a15c00; --warn-soft:#fdf1dc; --stock:#3b5bdb; --stock-soft:#e7ecfd;
+  --gone:#9aa3ab;
+  --f-display:"Saira Condensed","Arial Narrow",Arial,sans-serif;
+  --f-body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#11161c; --panel:#18202a; --ink:#e7ebee; --muted:#9aa5b0; --line:#2a3441;
+  --accent:#ff7a3d; --accent-soft:#3a2216; --mine:#3fc5b0; --mine-soft:#14332e;
+  --warn:#f0b04a; --warn-soft:#3a2d14; --stock:#8ca2ff; --stock-soft:#1f2747; --gone:#5d6875; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#11161c; --panel:#18202a; --ink:#e7ebee; --muted:#9aa5b0; --line:#2a3441;
+  --accent:#ff7a3d; --accent-soft:#3a2216; --mine:#3fc5b0; --mine-soft:#14332e;
+  --warn:#f0b04a; --warn-soft:#3a2d14; --stock:#8ca2ff; --stock-soft:#1f2747; --gone:#5d6875; color-scheme:dark}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:14px;line-height:1.45}
+.wrap{max-width:1180px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:20px 48px}
+header h1{font-family:var(--f-display);font-weight:800;font-size:2.4rem;letter-spacing:.01em;margin:0;line-height:1;text-transform:uppercase}
+header h1 span{color:var(--accent)}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.chip{font-size:12px;border:1px solid var(--line);background:var(--panel);border-radius:4px;padding:3px 8px;color:var(--muted)}
+.chip b{color:var(--ink);font-weight:600}
+.grid{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:20px;margin-top:20px;align-items:start}
+@media (max-width:900px){.grid{grid-template-columns:1fr}.side{order:-1}}
+.side{display:flex;flex-direction:column;gap:14px;position:sticky;top:env(safe-area-inset-top,0px)}
+@media (max-width:900px){.side{position:static}}
+.box{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:14px}
+.box h2{font-family:var(--f-display);font-weight:600;font-size:1.05rem;text-transform:uppercase;letter-spacing:.06em;margin:0 0 10px;color:var(--muted)}
+.clock{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+label{font-size:12px;color:var(--muted)}
+select,input[type=search]{font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:4px;padding:6px 8px}
+.big{font-family:var(--f-display);font-weight:800;font-size:2rem;line-height:1}
+.next{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}
+.next div{background:var(--bg);border-radius:4px;padding:8px}
+.next small{display:block;font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+.mypicks{font-size:12px;color:var(--muted);margin-top:8px;font-family:var(--f-mono)}
+.slots{display:grid;grid-template-columns:44px 1fr;gap:4px 8px;font-size:13px}
+.slots .s{font-family:var(--f-mono);color:var(--muted);font-size:12px;padding-top:1px}
+.slots .p.empty{color:var(--gone)}
+.rules{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:7px;font-size:13px}
+.rules b{color:var(--ink)}
+.tools{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:10px}
+.tools input[type=search]{flex:1 1 180px;min-width:0}
+.pos{display:flex;flex-wrap:wrap;gap:4px}
+button{font:inherit;cursor:pointer}
+.pos button,.toggle{border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:4px;padding:5px 9px;font-size:12px;font-weight:600}
+.pos button[aria-pressed=true],.toggle[aria-pressed=true]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.tablewrap{background:var(--panel);border:1px solid var(--line);border-radius:6px;overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}
+th{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);text-align:left;padding:8px;border-bottom:1px solid var(--line);font-weight:600}
+td{padding:7px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+td.n{font-family:var(--f-mono);color:var(--muted);font-size:12px;white-space:nowrap}
+td.name{font-weight:600;min-width:150px}
+td.pp{font-size:12px;color:var(--muted);white-space:nowrap}
+.tier td{background:var(--bg);font-family:var(--f-display);font-weight:600;text-transform:uppercase;letter-spacing:.06em;font-size:13px;color:var(--accent);padding-top:10px}
+.tier td span{color:var(--muted);font-family:var(--f-body);text-transform:none;letter-spacing:0;font-weight:400;font-size:12px;margin-left:8px}
+.tag{display:inline-block;font-size:10.5px;font-weight:600;border-radius:3px;padding:1px 5px;margin:2px 4px 0 0;letter-spacing:.02em}
+.t-inj{background:var(--warn-soft);color:var(--warn)}
+.t-stk{background:var(--stock-soft);color:var(--stock)}
+.t-up{background:var(--mine-soft);color:var(--mine)}
+.t-fade{background:var(--accent-soft);color:var(--accent)}
+.note{display:block;font-weight:400;font-size:12px;color:var(--muted);margin-top:2px}
+.act{white-space:nowrap;text-align:right}
+.act button{border:1px solid var(--line);background:transparent;color:var(--ink);border-radius:4px;padding:3px 8px;font-size:12px;margin-left:4px}
+.act .m{border-color:var(--mine);color:var(--mine)}
+tr.gone td{opacity:.4} tr.gone td.name{text-decoration:line-through}
+tr.mine td{background:var(--mine-soft)} tr.mine td.name{color:var(--mine)}
+.sl{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+.sl li{display:grid;grid-template-columns:26px minmax(0,1fr) auto;gap:8px;align-items:start;padding:8px;border-radius:4px;background:var(--bg)}
+.sl li:first-child{background:var(--accent-soft)}
+.sl .k{font-family:var(--f-display);font-weight:800;font-size:1.3rem;line-height:1;color:var(--muted)}
+.sl li:first-child .k{color:var(--accent)}
+.sl .nm{font-weight:600}
+.sl .why{display:block;font-size:12px;color:var(--muted);margin-top:2px}
+.sl .meta{font-family:var(--f-mono);font-size:11px;color:var(--muted);white-space:nowrap}
+.sl button{grid-column:2/4;justify-self:start;border:1px solid var(--mine);color:var(--mine);background:transparent;border-radius:4px;padding:3px 8px;font-size:12px}
+.sn{font-size:11.5px;color:var(--muted);margin:10px 0 0}
+.sugg.up{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
+.mv{display:inline-block;margin-left:4px;font-size:10.5px}.mv.u{color:var(--mine)}.mv.d{color:var(--accent)}
+.dim{color:var(--muted);font-size:11px}.ghi{color:var(--mine);font-weight:600}.glo{color:var(--accent);font-weight:600}td.fp{color:var(--ink)}
+.foot{font-size:12px;color:var(--muted);margin-top:14px}
+.reset{border:1px solid var(--line);background:transparent;color:var(--muted);border-radius:4px;padding:5px 9px;font-size:12px}
+.reset.arm{border-color:var(--accent);color:var(--accent)}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+<div class="wrap">
+<header>
+  <h1>Draft Night <span>Board</span></h1>
+  <div class="chips">
+    <span class="chip"><b>Sun 18 Oct, 12:00 am</b> SGT (Sat 12 pm EDT)</span>
+    <span class="chip"><b>8 teams</b> · snake · 2-min clock</span>
+    <span class="chip"><b>13 rounds</b> · 10 starters + 3 bench + 3 IL</span>
+    <span class="chip">PTS 1 · REB 1.2 · AST 1.5 · <b>STL 3 · BLK 3</b> · TO −1</span>
+    <span class="chip">Playoffs wk 20–22, end <b>4 Apr</b></span>
+  </div>
+</header>
+
+<div class="grid">
+<main>
+  <div class="tools">
+    <input type="search" id="q" placeholder="Find a player" aria-label="Find a player">
+    <div class="pos" id="pos" role="group" aria-label="Filter by position"></div>
+    <button class="toggle" id="hide" aria-pressed="false">Hide gone</button>
+  </div>
+  <div class="tablewrap"><table>
+    <thead><tr><th>My #</th><th>Rd</th><th>Expert</th><th>Player</th><th>Pos</th><th>Team</th><th title="Fantasy points per game last season, your scoring">FP/G</th><th title="Games in your playoff weeks 20–22">Playoff G</th><th></th></tr></thead>
+    <tbody id="rows"></tbody>
+  </table></div>
+  <p class="foot"><b>My #</b> is my forecast order. <b>Expert</b> is Dan Titus's Yahoo points-league rank (29 Sep); arrows show how far I moved a player. I moved players for projected role changes (trades, new starters), breakout and bust calls from CBS's projection model, Athlon and NBA.com, 2025-26 fantasy points per game, preseason production through 14 Oct, games-missed history, and injury reports from 15–16 Oct. Check news again before you pick. "Rd" is the round in your 8-team draft.</p>
+  <p class="foot"><b>FP/G</b> is each player's 2025-26 fantasy points per game in your scoring (PTS + 1.2 REB + 1.5 AST + 3 STL + 3 BLK − TO), from Basketball-Reference per-game stats. * means fewer than 25 games, so treat it with care; – means a rookie, someone who missed the season, or a player outside the data (under about 9 ppg). <b>Playoff G</b> is his current team's games in your playoff weeks 20–22 (15 Mar–4 Apr 2027), from the official schedule; green is 12, orange is 9. Last season's numbers come from the team he played for then.</p>
+</main>
+
+<aside class="side">
+  <section class="box">
+    <h2>On the clock</h2>
+    <div class="clock">
+      <label for="slot">Your draft slot</label>
+      <select id="slot"><option value="">Pick…</option></select>
+      <button class="reset" id="reset">Reset board</button>
+    </div>
+    <div class="next">
+      <div><small>Current pick</small><span class="big" id="cur">1</span></div>
+      <div><small>Your next pick</small><span class="big" id="nxt">–</span> <span id="away" style="font-size:12px;color:var(--muted)"></span></div>
+    </div>
+    <div class="mypicks" id="mypicks"></div>
+  </section>
+
+  <section class="box sugg" id="suggBox">
+    <h2>Suggested pick</h2>
+    <ol class="sl" id="sugg"></ol>
+    <p class="sn">Ranked by: best available, then your open C slots, stocks, health and position gaps. If #1 is gone, take #2.</p>
+  </section>
+
+  <section class="box">
+    <h2>My roster</h2>
+    <div class="slots" id="slots"></div>
+  </section>
+
+  <section class="box">
+    <h2>How this league is won</h2>
+    <ol class="rules">
+      <li><b>Steals and blocks are worth 3.</b> One block equals three points scored. Lean toward players tagged <span class="tag t-stk">STOCKS</span> when ranks are close.</li>
+      <li><b>Missed shots cost nothing.</b> There's no FG% or FT% penalty, so minutes and volume beat efficiency. Bad free-throw shooters are fine here.</li>
+      <li><b>Games played decides weeks.</b> Lineups are daily and you get 4 adds a week, so durable players beat fragile ones at the same rank.</li>
+      <li><b>Only 8 teams, so the waiver wire is deep.</b> Take the best player, not the position you need. Upside beats safety in later rounds, and your 4 weekly adds are a real weapon for streaming.</li>
+      <li><b>Two C slots.</b> Get two real centers by about round 7; bigs stack rebounds and blocks.</li>
+      <li><b>IL slots are free roster space.</b> In rounds 12–13, take an injured player who returns before the playoffs (tagged <span class="tag t-up">STASH</span>) and park him on IL once he's listed out.</li>
+      <li><b>Mark every pick as it happens.</b> Tap <i>Gone</i> for others' picks and <i>Mine</i> for yours so the board and your next pick stay accurate.</li>
+    </ol>
+  </section>
+</aside>
+</div>
+</div>
+
+<script>
+const RAW=`Nikola Jokić|C|DEN
+Luka Dončić|PG,SG|LAL
+Victor Wembanyama|C|SAS
+Giannis Antetokounmpo|PF,C|MIA
+Shai Gilgeous-Alexander|PG|OKC
+Cade Cunningham|PG,SG|DET
+Jayson Tatum|SF,PF|BOS
+Jalen Johnson|PF,SF|ATL
+Anthony Edwards|PG,SF,SG|MIN
+Tyrese Maxey|PG,SG|PHI
+Tyrese Haliburton|PG,SG|IND
+Cooper Flagg|PF,SF,SG|DAL
+Alperen Sengun|C,PF|HOU
+Donovan Mitchell|PG,SG|CLE
+Anthony Davis|PF,C|WAS
+Paolo Banchero|PF,SF|ORL
+Scottie Barnes|C,PF,SF,SG|TOR
+Josh Giddey|PG,SG,SF|CHI
+Jamal Murray|PG|DEN
+LeBron James|SF,PF|PHI
+LaMelo Ball|PG|MIN
+Trae Young|PG|WAS
+Jalen Brunson|PG|NYK
+Kevin Durant|PF,SF,SG|HOU
+Amen Thompson|PG,SF,SG|HOU
+Stephon Castle|PG,SG|SAS
+Karl-Anthony Towns|PF,C|NYK
+Bam Adebayo|C,PF|MIA
+Stephen Curry|PG|GSW
+James Harden|PG,SG|CLE
+Devin Booker|PG,SG|PHX
+Deni Avdija|PF,SF,SG|POR
+Kawhi Leonard|PF,SF,SG|TOR
+Jaylen Brown|PF,SF,SG|PHI
+Jalen Duren|C|DET
+Evan Mobley|PF,C|CLE
+Trey Murphy III|PF,SF,SG|NOP
+Austin Reaves|PG,SF,SG|LAL
+Keyonte George|PG,SG|UTA
+Domantas Sabonis|C,PF|SAC
+Pascal Siakam|C,PF,SF|IND
+Julius Randle|PF|BKN
+Zion Williamson|C,PF|NOP
+Brandon Miller|PF,SF,SG|CHA
+Kyrie Irving|PG|DAL
+Ja Morant|PG|POR
+Joel Embiid|C|PHI
+Damian Lillard|PG|POR
+Jalen Williams|PF,SF,SG|OKC
+Dejounte Murray|PG,SG|NOP
+Chet Holmgren|PF,C|OKC
+Desmond Bane|SG,SF|ORL
+Lauri Markkanen|SF,PF|UTA
+Jaren Jackson Jr.|PF,C|UTA
+Tyler Herro|PG,SG|MIL
+Onyeka Okongwu|C|ATL
+Franz Wagner|PF,SF|ORL
+Walker Kessler|C|LAL
+De'Aaron Fox|PG,SG|SAS
+Michael Porter Jr.|SF,PF|BKN
+Matas Buzelis|SF,PF|CHI
+Nickeil Alexander-Walker|PG,SG|ATL
+Donovan Clingan|C|POR
+Darius Garland|PG|LAC
+Ryan Rollins|PG,SG|MIL
+Zach Edey|C|MEM
+Dyson Daniels|PG,SF,SG|ATL
+Jarrett Allen|C|CLE
+Brandon Ingram|SG,SF,PF|LAC
+Cameron Boozer|PF|MEM
+Derrick White|PG,SG|BOS
+Naz Reid|PF,C|CHA
+Kel'el Ware|C|MIL
+Ivica Zubac|C|IND
+Caleb Wilson|PF,SF|CHI
+Alex Sarr|C,PF|WAS
+VJ Edgecombe|PG,SG|PHI
+Paul George|PF,SF|BOS
+Kon Knueppel|SF,SG|CHA
+Payton Pritchard|PG,SG|BOS
+Ausar Thompson|PF,SF,SG|DET
+Coby White|PG,SG|CHA
+Norman Powell|SG,SF|CHI
+RJ Barrett|PF,SF,SG|TOR
+Josh Hart|SF,SG|NYK
+Immanuel Quickley|PG,SG|TOR
+Day'Ron Sharpe|C|BKN
+Jalen Suggs|PG,SG|ORL
+Rudy Gobert|C|MIN
+Cedric Coward|SF,SG|MEM
+Darius Acuff Jr.|PG|SAC
+Jaden McDaniels|PF,SF|MIN
+Dylan Harper|PG,SG|SAS
+Nic Claxton|C|CHI
+Jalen Green|SF,SG|PHX
+OG Anunoby|SF,PF|NYK
+Andrew Wiggins|PF,SF,SG|MIA
+Jusuf Nurkić|C|UTA
+AJ Dybantsa|SF|WAS
+Ty Jerome|PG,SG|MEM
+Zach LaVine|PG,SF,SG|SAC
+Derik Queen|C,PF|NOP
+Miles Bridges|SF,PF|PHX
+Andrew Nembhard|PG,SG|IND
+Peyton Watson|SF,PF|CLE
+Jabari Smith Jr.|C,PF|HOU
+CJ McCollum|PG,SG|ATL
+Keegan Murray|SF,PF|SAC
+Darryn Peterson|PG,SG|UTA
+Myles Turner|C|MIL
+Isaiah Hartenstein|C|OKC
+Mikal Bridges|PF,SF,SG|NYK
+Jakob Poeltl|C|TOR
+Davion Mitchell|PG|MIA
+Rui Hachimura|SF,PF|LAC
+Neemias Queta|C|BOS
+John Collins|PF,C|DET
+Collin Murray-Boyles|C,PF|TOR
+Khaman Maluach|C|PHX
+Kyshawn George|PF,SF,SG|WAS
+DeMar DeRozan|PF,SF|DEN
+Quentin Grimes|SG,SF|LAL
+Jonathan Kuminga|PF,SF|MIN
+Brandin Podziemski|PG,SG|GSW
+Egor Dëmin|PG,SG|BKN
+Ayo Dosunmu|PG,SF,SG|MIN
+Collin Gillespie|PG,SG|PHX
+Tre Jones|PG,SG|CHI
+Bennedict Mathurin|SG,SF|NOP
+Jaime Jaquez Jr.|PF,SF,SG|MIL
+Jrue Holiday|PG,SG|POR
+Aaron Gordon|PF,C|DEN
+Yaxel Lendeborg|PF,SF|GSW
+P.J. Washington Jr.|C,PF,SF|DAL
+Wendell Carter Jr.|C|ORL
+Pelle Larsson|SG,SF|MIA
+Ace Bailey|PF,SF|UTA
+Daniel Gafford|C|DAL
+Saddiq Bey|SF,PF|NOP
+Kevin Porter Jr.|PG,SG|MIL
+Draymond Green|PF,C|GSW
+Kristaps Porziņģis|PF,C|GSW
+Ajay Mitchell|PG,SG|OKC
+Dillon Brooks|PF,SF,SG|PHX
+Jimmy Butler III|PF,SF,SG|GSW
+Fred VanVleet|PG,SG|HOU
+Anthony Black|PG,SG,SF|ORL
+Reed Sheppard|PG,SG|HOU
+Herbert Jones|PF,SF,SG|NOP
+Mikel Brown Jr.|PG,SG|FA
+Jerami Grant|SF,PF|MEM
+Devin Vassell|SG,SF|SAS
+Toumani Camara|PF,SF|POR
+Yves Missi|C|NOP
+Sandro Mamukelashvili|PF,C|LAL
+Jeremiah Fears|PG,SG|NOP
+Isaiah Collier|PG,SG|UTA
+Moussa Diabaté|PF,C|CHA
+Cason Wallace|PG,SF,SG|OKC
+Scotty Pippen Jr.|PG,SG|MEM
+Bobby Portis Jr.|PF,C|MIA
+Kyle Kuzma|SF,PF|MIL
+Maxime Raynaud|C|SAC
+Bradley Beal|SF,SG|LAC
+Cameron Johnson|PF,SF|DEN
+Tobias Harris|PF,SF|SAS
+Paul Reed|C,PF|DET
+Tari Eason|PF,SF,SG|HOU
+Klay Thompson|SG,SF|MIA
+Dennis Schröder|PG,SG|CHA
+Duncan Robinson|SG,SF|DET
+Anfernee Simons|PG,SG|PHI
+Jake LaRavia|SF,PF|LAL
+Deandre Ayton|C|WAS
+Grayson Allen|PG,SF,SG|CHA
+Kelly Oubre Jr.|PF,SF,SG|IND
+Jared McCain|PG,SG|OKC
+Jordan Poole|PG,SG|NOP
+Nikola Vučević|C|ORL
+Santi Aldama|PF,SF|DAL
+Scoot Henderson|PG,SG|POR
+Naji Marshall|PF,SF,SG|DAL
+Joan Beringer|C,PF|MIN
+Christian Braun|PF,SF,SG|DEN
+De'Andre Hunter|SF,PF|SAC
+Nique Clifford|SF,SG|SAC
+Malik Monk|PG,SG|SAC
+GG Jackson II|C,PF,SF|MEM
+Jaylon Tyson|PF,SF,SG|CLE
+Bilal Coulibaly|SG,SF|WAS
+Brook Lopez|C|LAC
+Aaron Nesmith|PF,SF,SG|IND
+Dereck Lively II|C|DAL
+Kyle Filipowski|C,PF|UTA
+Precious Achiuwa|PF,C|SAC
+Mark Williams|C|PHX
+Tre Johnson|PG,SF,SG|WAS
+Keldon Johnson|PF,SF|SAS
+Oso Ighodaro|C,PF|PHX
+Collin Sexton|PG,SG|LAL
+Keaton Wagler|PG,SG|LAC
+Shaedon Sharpe|PG,SF,SG|POR
+Bub Carrington|PG,SG|WAS
+Terrence Shannon Jr.|PG,SG|MIN
+Kris Dunn|PG,SG|LAC
+Miles McBride|PG,SG|NYK
+Will Riley|PF,SF|WAS
+Jaylen Wells|SF,SG|MEM
+Marvin Bagley III|PF,C|DEN
+Brice Sensabaugh|PF,SF,SG|UTA
+T.J. McConnell|PG|IND
+Jamal Shead|PG|TOR
+Julian Champagnie|PF,SF,SG|SAS
+Isaiah Stewart|C,PF|MEM
+Labaron Philon Jr.|PG,SG|PHI
+Max Strus|PF,SF|LAC
+Robert Williams III|C|POR
+Alex Caruso|PG,SG,SF|OKC
+Luguentz Dort|SG,SF|ATL
+Jay Huff|C|IND
+Royce O'Neale|SF,PF|CHA
+Al Horford|PF,C|GSW
+Morez Johnson Jr.|C|DAL
+Mitchell Robinson|C|BOS
+Jalen Smith|PF,C|CHI
+Noah Clowney|C,PF|BKN
+Gradey Dick|SG,SF|LAC
+Ben Simmons|PG|SAC
+Jaylin Williams|PF,C|OKC
+Cam Spencer|PG,SG|MEM
+Nikola Jović|C,PF|MIA
+Kevin Huerter|SG,SF|DET
+Andre Drummond|C|NYK
+Marcus Smart|PG,SG|HOU
+Hannes Steinbach|PF|CHA
+Ryan Kalkbrenner|C|CHA
+Tristan da Silva|SF,PF|ORL
+Rob Dillingham|PG,SG|FA
+Jordan Clarkson|PG,SF,SG|NYK
+Bones Hyland|PG,SG|MIN
+Sam Hauser|SF,PF|BOS
+Allen Graves|PF,SF|TOR
+Brayden Burries|SG|MIL
+Kingston Flemings|PG,SG|ATL
+De'Anthony Melton|PG,SG|GSW
+Khris Middleton|PF,SF,SG|WAS
+Kentavious Caldwell-Pope|SG,SF|PHI
+Zach Collins|C|CHI
+Aday Mara|C|OKC
+Christian Anderson Jr.|PG|CHA`;
+
+const NOTES={
+ "Nikola Jokić":[["up","SAFEST #1"],"62.1 pts/game in your scoring last season, best in the league by 4.6. Projected 74 games"],
+ "Luka Dončić":[["up","BOOST"],"57.5 pts/game in your scoring last season (2nd). With LeBron gone to PHI, even more of the offense"],
+ "Victor Wembanyama":[["stk","STOCKS"],"3.1 blocks/game. Highest ceiling in this scoring"],
+ "Giannis Antetokounmpo":[["inj","DURABILITY"],"49.1 pts/game but only 36 games last season (knee, calf)"],
+ "Tyrese Haliburton":[["up","VALUE"],"Fully cleared after missing last season; may slip because people are nervous"],
+ "Cooper Flagg":[["fade","BUST RISK"],"CBS projection model has him as a bust: Kyrie back takes the ball, new coach"],
+ "Anthony Davis":[["inj","DURABILITY"],"40 games or fewer in 3 of the last 6 seasons; new team, unclear role"],
+ "LaMelo Ball":[["inj","DURABILITY"],"Ankle problems, about 48 games a season. Elite per game"],
+ "LeBron James":[["fade","FADE"],"Age 41, foot arthritis, season start in question; managed minutes"],
+ "Jaylen Brown":[["fade","BUST RISK"],"Now beside Embiid, Maxey and LeBron; expect far fewer shots than his 28.7 ppg"],
+ "Kawhi Leonard":[["up","VALUE"],"45.9 pts/game over 65 games last season, 9th best. Ranked lower than his numbers"],
+ "Austin Reaves":[["up","BREAKOUT"],"LeBron's departure opens a much bigger role next to Luka"],
+ "Brandon Miller":[["up","BREAKOUT"],"Inherits usage from departed LaMelo and Bridges"],
+ "Zion Williamson":[["fade","BUST RISK"],"Injury history and scoring dropped to a career low"],
+ "Ja Morant":[["fade","BUST RISK"],"Recurring injuries; relies on athleticism"],
+ "Joel Embiid":[["fade","BUST RISK"],"Knee; may not reach 40 games. Load management swings weeks"],
+ "Kyrie Irving":[["inj","INJ"],"Back from ACL plus a calf strain; likely managed all season"],
+ "Dejounte Murray":[["inj","INJ"],"Toe, team being cautious before the opener"],
+ "Walker Kessler":[["stk","SLEEPER"],"2.4 blocks and 12.2 rebounds in his last full season, now healthy beside Luka. Three sources pick him"],
+ "De'Aaron Fox":[["fade","BUST RISK"],"Inconsistent shooting, losing ground to Castle and Harper"],
+ "Ryan Rollins":[["up","BREAKOUT"],"Runs Milwaukee's offense; durable, adds assists and steals"],
+ "Kel'el Ware":[["up","SLEEPER"],"Fresh start in Milwaukee with more minutes"],
+ "Brandon Ingram":[["inj","INJ"],"Partially torn Achilles; workouts resumed, no return date"],
+ "Derrick White":[["stk","SLEEPER"],"Jaylen Brown left Boston, so he's the No. 2 option. Strong steals and blocks for a guard"],
+ "Kon Knueppel":[["inj","INJ"],"Hamstring; questionable for opening night"],
+ "Coby White":[["inj","INJ"],"Calf, missed all preseason; likely limited early"],
+ "Day'Ron Sharpe":[["up","SLEEPER"],"Likely Brooklyn's starting center"],
+ "Cedric Coward":[["up","SLEEPER"],"All-Rookie 1st team; Morant and JJJ left Memphis, lots of shots open up"],
+ "Darius Acuff Jr.":[["up","BREAKOUT"],"CBS model ranks him above Trae Young: Kings' main option with Westbrook and DeRozan gone"],
+ "Dylan Harper":[["up","BREAKOUT"],"Strong NBA Finals off the bench; minutes going up"],
+ "Nic Claxton":[["inj","INJ"],"Hamstring; questionable at best for the opener"],
+ "Jusuf Nurkić":[["inj","INJ"],"Toe; back around game 8"],
+ "Kyshawn George":[["up","PRESEASON"],"15.7 pts, 1.3 stl, 1.3 blk in preseason; likely starter"],
+ "Yaxel Lendeborg":[["up","PRESEASON"],"Preseason: 15.3 pts, 8.3 reb, 3.8 ast; may start for GSW"],
+ "Kristaps Porziņģis":[["fade","OUT"],"Away from the team since camp, out indefinitely"],
+ "Jimmy Butler III":[["up","STASH"],"ACL; expected back early 2027. Waiver-wire stash in an 8-team league"],
+ "Shaedon Sharpe":[["up","STASH"],"Torn meniscus; maybe back late Feb/early Mar. IL stash"],
+ "Mark Williams":[["up","STASH"],"Shoulder surgery; extended absence"],
+ "Tobias Harris":[["inj","INJ"],"Calf; questionable for opener"],
+ "Bradley Beal":[["inj","INJ"],"Knee; not ready for the opener"],
+ "Dereck Lively II":[["inj","INJ"],"Foot; return timeline unclear"],
+ "Santi Aldama":[["inj","INJ"],"Knee; no timeline"],
+ "Maxime Raynaud":[["inj","INJ"],"Knee; out at least 5–6 games"],
+ "Max Strus":[["inj","INJ"],"Foot, out about 4 weeks"],
+ "Isaiah Stewart":[["inj","INJ"],"Ankle sprain, about 2 weeks"],
+ "Aday Mara":[["stk","WATCH"],"Preseason: 2.8 blocks a game as backup C. Grab off waivers if he earns minutes"],
+ "Nikola Vučević":[["fade","BUST RISK"],"Declining; may lose his backup role"],
+ "Amen Thompson":[["stk","STOCKS"]],"Evan Mobley":[["stk","STOCKS"]],"Chet Holmgren":[["stk","STOCKS"]],
+ "Jaren Jackson Jr.":[["stk","STOCKS"]],"Donovan Clingan":[["stk","STOCKS"]],
+ "Dyson Daniels":[["stk","STOCKS"],"Elite steals; worth more here than his scoring suggests"],
+ "Alex Sarr":[["stk","STOCKS"]],"Ausar Thompson":[["stk","STOCKS"]],"Matas Buzelis":[["stk","STOCKS"]],
+ "Myles Turner":[["stk","STOCKS"]],"Brook Lopez":[["stk","STOCKS"]],"Herbert Jones":[["stk","STOCKS"]],"Alex Caruso":[["stk","STOCKS"]]
+};
+// My forecast: moves vs the expert rank (negative = move up)
+const ADJ={"Tyrese Haliburton":-2,"Giannis Antetokounmpo":3,"Cooper Flagg":4,"Anthony Davis":8,"LaMelo Ball":6,"LeBron James":12,
+"Jaylen Brown":9,"Austin Reaves":-9,"Brandon Miller":-5,"Zion Williamson":7,"Ja Morant":8,"Joel Embiid":15,"Kyrie Irving":5,"Dejounte Murray":3,
+"Walker Kessler":-11,"De'Aaron Fox":7,"Ryan Rollins":-6,"Kel'el Ware":-5,"Brandon Ingram":10,"Derrick White":-9,"Kon Knueppel":3,"Coby White":4,
+"Day'Ron Sharpe":-5,"Cedric Coward":-9,"Darius Acuff Jr.":-16,"Dylan Harper":-5,"Nic Claxton":5,"Kyshawn George":-10,"Yaxel Lendeborg":-26,
+"Kristaps Porziņģis":60,"Aday Mara":-80,"Nikola Vučević":15,"Jamal Murray":-1,"Kawhi Leonard":-5};
+const TIERS=[[1,"Tier 1 · franchise picks","Ranks 1–5. Take whoever's left."],[6,"Tier 2 · rest of round 1","Ranks 6–8"],[9,"Tier 3 · round 2","Ranks 9–16"],[17,"Tier 4 · round 3","Ranks 17–24"],[25,"Tier 5 · rounds 4–5","Ranks 25–40. Lock up your first big by here"],[41,"Tier 6 · rounds 6–8","Second center, stock-heavy forwards"],[65,"Tier 7 · rounds 9–13","Upside and IL stashes"],[105,"Tier 8 · waiver wire","Undrafted in an 8-team league. Your streaming pool"]];
+
+const FP={"Nikola Jokić": [62.1, 65], "Luka Dončić": [57.5, 64], "Victor Wembanyama": [53.4, 64], "Giannis Antetokounmpo": [49.1, 36], "Shai Gilgeous-Alexander": [50.6, 68], "Cade Cunningham": [48.2, 64], "Jayson Tatum": [44.1, 16], "Jalen Johnson": [48.1, 72], "Anthony Edwards": [44.1, 61], "Tyrese Maxey": [48.8, 70], "Cooper Flagg": [39.8, 70], "Alperen Sengun": [44.1, 72], "Donovan Mitchell": [44.4, 70], "Anthony Davis": [44.2, 20], "Paolo Banchero": [40.9, 72], "Scottie Barnes": [42.1, 80], "Josh Giddey": [41.5, 54], "Jamal Murray": [42.9, 75], "LeBron James": [41.4, 60], "LaMelo Ball": [37.9, 72], "Trae Young": [32.7, 15], "Jalen Brunson": [40.5, 74], "Kevin Durant": [41.7, 78], "Amen Thompson": [39.5, 79], "Stephon Castle": [35.2, 68], "Karl-Anthony Towns": [40.6, 75], "Bam Adebayo": [41.0, 73], "Stephen Curry": [39.7, 43], "James Harden": [42.4, 70], "Devin Booker": [40.0, 64], "Deni Avdija": [42.9, 66], "Kawhi Leonard": [45.9, 65], "Jaylen Brown": [45.2, 71], "Jalen Duren": [38.0, 70], "Evan Mobley": [39.7, 65], "Trey Murphy III": [37.9, 66], "Austin Reaves": [38.7, 51], "Keyonte George": [38.3, 54], "Domantas Sabonis": [36.2, 19], "Pascal Siakam": [39.9, 62], "Julius Randle": [37.8, 79], "Zion Williamson": [35.1, 62], "Brandon Miller": [33.6, 65], "Ja Morant": [35.9, 20], "Joel Embiid": [44.5, 38], "Jalen Williams": [33.5, 33], "Dejounte Murray": [34.8, 14], "Chet Holmgren": [36.2, 69], "Desmond Bane": [33.7, 82], "Lauri Markkanen": [41.1, 42], "Jaren Jackson Jr.": [34.5, 48], "Tyler Herro": [33.8, 33], "Onyeka Okongwu": [33.9, 74], "Franz Wagner": [33.7, 34], "Walker Kessler": [38.3, 5], "De'Aaron Fox": [34.7, 72], "Michael Porter Jr.": [39.1, 52], "Matas Buzelis": [30.9, 77], "Nickeil Alexander-Walker": [33.7, 78], "Donovan Clingan": [34.9, 77], "Darius Garland": [32.4, 45], "Ryan Rollins": [34.2, 74], "Zach Edey": [33.7, 11], "Dyson Daniels": [34.3, 76], "Jarrett Allen": [32.4, 56], "Brandon Ingram": [35.9, 77], "Derrick White": [35.4, 77], "Naz Reid": [28.7, 77], "Kel'el Ware": [27.8, 77], "Ivica Zubac": [31.9, 48], "Alex Sarr": [35.9, 48], "VJ Edgecombe": [32.9, 75], "Paul George": [33.7, 37], "Kon Knueppel": [30.7, 81], "Payton Pritchard": [30.5, 79], "Ausar Thompson": [28.6, 73], "Coby White": [26.7, 50], "Norman Powell": [31.6, 58], "RJ Barrett": [31.9, 57], "Josh Hart": [30.4, 66], "Immanuel Quickley": [32.8, 70], "Jalen Suggs": [31.5, 57], "Rudy Gobert": [33.0, 76], "Cedric Coward": [26.2, 62], "Jaden McDaniels": [28.4, 73], "Dylan Harper": [23.6, 69], "Nic Claxton": [29.5, 69], "Jalen Green": [28.2, 32], "OG Anunoby": [31.3, 67], "Andrew Wiggins": [30.0, 68], "Jusuf Nurkić": [33.5, 41], "Ty Jerome": [34.0, 15], "Zach LaVine": [27.1, 39], "Derik Queen": [29.2, 81], "Miles Bridges": [30.5, 77], "Andrew Nembhard": [32.4, 57], "Peyton Watson": [27.9, 54], "Jabari Smith Jr.": [30.3, 77], "CJ McCollum": [30.6, 76], "Keegan Murray": [30.0, 23], "Myles Turner": [26.2, 71], "Mikal Bridges": [29.8, 82], "Jakob Poeltl": [25.7, 46], "Rui Hachimura": [18.8, 68], "Neemias Queta": [28.1, 76], "John Collins": [24.9, 69], "Kyshawn George": [30.8, 48], "DeMar DeRozan": [30.7, 77], "Quentin Grimes": [24.8, 75], "Jonathan Kuminga": [23.2, 36], "Brandin Podziemski": [27.8, 82], "Egor Dëmin": [20.7, 52], "Ayo Dosunmu": [26.2, 69], "Collin Gillespie": [27.1, 80], "Tre Jones": [28.7, 65], "Bennedict Mathurin": [28.5, 54], "Jaime Jaquez Jr.": [29.4, 75], "Jrue Holiday": [31.5, 53], "Aaron Gordon": [28.8, 36], "P.J. Washington Jr.": [29.9, 56], "Wendell Carter Jr.": [26.6, 78], "Pelle Larsson": [22.0, 70], "Ace Bailey": [24.5, 72], "Daniel Gafford": [24.6, 55], "Saddiq Bey": [30.3, 72], "Kevin Porter Jr.": [39.9, 38], "Kristaps Porziņģis": [30.8, 32], "Ajay Mitchell": [26.1, 57], "Dillon Brooks": [29.0, 56], "Jimmy Butler III": [37.3, 38], "Anthony Black": [29.3, 64], "Reed Sheppard": [27.2, 82], "Jerami Grant": [27.8, 57], "Devin Vassell": [25.4, 67], "Toumani Camara": [26.0, 82], "Sandro Mamukelashvili": [23.0, 80], "Jeremiah Fears": [26.4, 82], "Isaiah Collier": [27.2, 59], "Scotty Pippen Jr.": [25.3, 10], "Bobby Portis Jr.": [25.2, 67], "Kyle Kuzma": [24.1, 69], "Maxime Raynaud": [25.3, 74], "Cameron Johnson": [22.8, 54], "Tobias Harris": [26.1, 63], "Tari Eason": [24.0, 60], "Klay Thompson": [17.8, 69], "Dennis Schröder": [22.6, 70], "Duncan Robinson": [20.6, 77], "Anfernee Simons": [21.5, 55], "Deandre Ayton": [26.9, 72], "Grayson Allen": [29.3, 51], "Kelly Oubre Jr.": [26.8, 50], "Jordan Poole": [21.7, 39], "Nikola Vučević": [32.4, 64], "Santi Aldama": [29.9, 43], "Scoot Henderson": [24.2, 30], "Naji Marshall": [27.8, 74], "Christian Braun": [23.8, 44], "De'Andre Hunter": [22.3, 45], "Malik Monk": [20.8, 62], "GG Jackson II": [22.6, 55], "Jaylon Tyson": [24.7, 66], "Bilal Coulibaly": [26.3, 56], "Aaron Nesmith": [23.6, 45], "Kyle Filipowski": [26.5, 77], "Precious Achiuwa": [24.1, 73], "Mark Williams": [27.1, 60], "Tre Johnson": [19.7, 60], "Keldon Johnson": [23.0, 82], "Collin Sexton": [24.6, 68], "Shaedon Sharpe": [31.5, 50], "Bub Carrington": [21.8, 82], "Miles McBride": [21.3, 41], "Will Riley": [17.9, 74], "Jaylen Wells": [20.6, 69], "Marvin Bagley III": [22.5, 60], "Brice Sensabaugh": [22.5, 75], "T.J. McConnell": [22.2, 56], "Julian Champagnie": [23.4, 82], "Isaiah Stewart": [22.2, 58], "Max Strus": [20.8, 12], "Jay Huff": [22.8, 82], "Royce O'Neale": [22.8, 78], "Jalen Smith": [22.9, 53], "Noah Clowney": [22.6, 66], "Cam Spencer": [23.9, 72], "Kevin Huerter": [21.3, 69], "Tristan da Silva": [19.4, 77], "De'Anthony Melton": [24.1, 49], "Khris Middleton": [19.5, 63], "Zach Collins": [19.5, 10]};
+const GM={"ATL": [4, 3, 4], "BOS": [3, 4, 4], "BKN": [4, 3, 4], "CHA": [3, 4, 4], "CHI": [3, 4, 4], "CLE": [3, 2, 4], "DAL": [4, 4, 4], "DEN": [4, 3, 4], "DET": [3, 4, 4], "GSW": [3, 4, 4], "HOU": [3, 4, 4], "IND": [4, 3, 4], "LAC": [3, 4, 4], "LAL": [4, 3, 3], "MEM": [4, 4, 3], "MIA": [3, 3, 4], "MIL": [3, 4, 4], "MIN": [2, 4, 4], "NOP": [4, 3, 2], "NYK": [3, 4, 4], "OKC": [3, 4, 3], "ORL": [4, 4, 3], "PHI": [4, 4, 3], "PHX": [4, 4, 4], "POR": [4, 3, 4], "SAC": [4, 3, 4], "SAS": [4, 3, 4], "TOR": [4, 4, 3], "UTA": [3, 4, 3], "WAS": [3, 4, 3]};
+const P=RAW.split("\n").map((l,i)=>{const[n,p,t]=l.split("|");return{r:i+1,n,pos:p.split(","),t}});
+P.forEach(p=>p.adj=p.r+(ADJ[p.n]||0));P.sort((a,b)=>a.adj-b.adj||a.r-b.r);P.forEach((p,i)=>p.o=i+1);
+const KEY="dnb-v4";
+let S={st:{},slot:"",hide:false,pos:"ALL"};
+try{const v=JSON.parse(localStorage.getItem(KEY)||"null");if(v)S=Object.assign(S,v)}catch(e){}
+const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}};
+
+const POS=["ALL","PG","SG","SF","PF","C"];
+const posEl=document.getElementById("pos");
+POS.forEach(p=>{const b=document.createElement("button");b.textContent=p;b.dataset.p=p;b.onclick=()=>{S.pos=p;save();render()};posEl.appendChild(b)});
+const slotSel=document.getElementById("slot");
+for(let i=1;i<=8;i++){const o=document.createElement("option");o.value=i;o.textContent="Pick "+i;slotSel.appendChild(o)}
+slotSel.value=S.slot;slotSel.onchange=()=>{S.slot=slotSel.value;save();render()};
+document.getElementById("q").oninput=render;
+const hideBtn=document.getElementById("hide");
+hideBtn.onclick=()=>{S.hide=!S.hide;save();render()};
+const resetBtn=document.getElementById("reset");let armed=null;
+resetBtn.onclick=()=>{if(resetBtn.classList.contains("arm")){S.st={};save();clearTimeout(armed);resetBtn.classList.remove("arm");resetBtn.textContent="Reset board";render()}else{resetBtn.classList.add("arm");resetBtn.textContent="Tap again to clear";armed=setTimeout(()=>{resetBtn.classList.remove("arm");resetBtn.textContent="Reset board"},3000)}};
+
+function myPicks(slot){const a=[];for(let r=1;r<=13;r++)a.push(r%2?(r-1)*8+ +slot:r*8+1-slot);return a}
+function fpCell(p){const f=FP[p.n];if(!f)return '<span class="dim" title="Rookie or didn\'t play enough last season">–</span>';return f[1]<25?`<span class="dim" title="Only ${f[1]} games">${f[0]}*</span>`:`${f[0]}`}
+function gmCell(p){const g=GM[p.t];if(!g)return "–";const t=g[0]+g[1]+g[2];return `<span class="g${t>=12?"hi":t<=9?"lo":""}" title="Week 20: ${g[0]}, Week 21: ${g[1]}, Week 22: ${g[2]}">${t}</span> <span class="dim">${g.join("-")}</span>`}
+function esc(s){return s.replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]))}
+
+function fillSlots(mine){
+  const slots=[["PG",["PG"]],["SG",["SG"]],["G",["PG","SG"]],["SF",["SF"]],["PF",["PF"]],["F",["SF","PF"]],["C",["C"]],["C",["C"]],["UTIL",null],["UTIL",null]];
+  const fill=slots.map(()=>null),bench=[];
+  // most-restricted first
+  [...mine].sort((a,b)=>a.pos.length-b.pos.length).forEach(pl=>{
+    const i=slots.findIndex((s,k)=>!fill[k]&&(!s[1]||pl.pos.some(x=>s[1].includes(x))));
+    if(i>-1)fill[i]=pl;else bench.push(pl)});
+  let h="";slots.forEach((s,k)=>{h+=`<span class="s">${s[0]}</span><span class="p ${fill[k]?"":"empty"}">${fill[k]?esc(fill[k].n):"open"}</span>`});
+  for(let k=0;k<3;k++)h+=`<span class="s">BN</span><span class="p ${bench[k]?"":"empty"}">${bench[k]?esc(bench[k].n):"open"}</span>`;
+  bench.slice(3).forEach(b=>h+=`<span class="s">+</span><span class="p">${esc(b.n)}</span>`);
+  document.getElementById("slots").innerHTML=h;
+}
+
+function tierOf(r){let t=0;TIERS.forEach((x,i)=>{if(r>=x[0])t=i});return t}
+function suggest(mine,isUp){
+  const box=document.getElementById("suggBox"),el=document.getElementById("sugg");
+  box.classList.toggle("up",!!isUp);
+  if(mine.length>=13){el.innerHTML='<li><span class="k">✓</span><span class="nm">Draft complete</span></li>';return}
+  const rnd=mine.length+1;
+  const cnt=pos=>mine.filter(m=>m.pos.includes(pos)).length;
+  const cCount=cnt("C");
+  const gaps=["PG","SG","SF","PF"].filter(x=>cnt(x)===0);
+  const avail=P.filter(p=>!S.st[p.r]);
+  const pool=avail.slice(0,14);
+  const scored=pool.map(p=>{
+    const nt=NOTES[p.n],tag=nt?nt[0][1]:"";let sc=p.o;const why=[];
+    if(p===avail[0])why.push("Best available");
+    if(p.pos.includes("C")&&cCount<2){const b=rnd>=6?8:rnd>=3?4:2;sc-=b;why.push(cCount===0?"Fills your 1st C":"Fills your 2nd C")}
+    if(tag==="STOCKS"||tag==="WATCH"){sc-=2;why.push("Steals/blocks worth 3")}
+    if(tag==="BOOST"||tag==="BREAKOUT"||tag==="SLEEPER"){why.push(tag==="BOOST"?"Bigger role this year":tag==="BREAKOUT"?"Breakout pick":"Sleeper value")}
+    if(tag==="BUST RISK"){sc+=2;why.push("Bust risk")}
+    if(tag==="OUT"){sc+=40}
+    if(tag==="INJ"||tag==="DURABILITY"){sc+=4;why.push(tag==="INJ"?"Injured now, check news":"Misses games")}
+    if(tag==="FADE"){sc+=12;why.push("Overpriced, risky")}
+    if(tag==="STASH"){sc+=40}
+    if(rnd>=8&&gaps.length){const g=p.pos.filter(x=>gaps.includes(x));if(g.length){sc-=3;why.push("Covers empty "+g.join("/"))}}
+    const t=tierOf(p.o);if(avail.filter(a=>tierOf(a.o)===t).length===1){sc-=2;why.push("Last in its tier")}
+    const g=GM[p.t];if(g){const t=g[0]+g[1]+g[2];sc-=(t-11)*1.5;if(t>=12)why.push(t+" playoff games");if(t<=9)why.push("Only "+t+" playoff games")}
+    const f=FP[p.n];if(f&&f[1]>=40){const pf=pool.map(x=>FP[x.n]).filter(x=>x&&x[1]>=40).map(x=>x[0]).sort((a,b)=>a-b);const med=pf[Math.floor(pf.length/2)]||f[0];const d=Math.max(-3,Math.min(3,(f[0]-med)*0.3));sc-=d;if(f[0]-med>=4)why.push(f[0]+" pts/game last season")}
+    if(p.pos.length>=3)why.push("Multi-position");
+    return{p,sc,why};
+  }).sort((a,b)=>a.sc-b.sc);
+  let top=scored.slice(0,3);
+  if(rnd>=12){const st=avail.find(p=>NOTES[p.n]&&NOTES[p.n][0][1]==="STASH");if(st){top=top.slice(0,2);top.push({p:st,why:["IL stash: free roster spot, back before playoffs"]})}}
+  el.innerHTML=top.map((o,i)=>`<li><span class="k">${i+1}</span><span><span class="nm">${esc(o.p.n)}</span><span class="why">${o.why.length?o.why.join(" · "):"Next best by rank"}</span></span><span class="meta">#${o.p.o} ${o.p.pos.join("/")}${FP[o.p.n]?" · "+FP[o.p.n][0]+" FP/G":""}</span><button data-r="${o.p.r}" data-a="m">Draft as Mine</button></li>`).join("");
+}
+function render(){
+  posEl.querySelectorAll("button").forEach(b=>b.setAttribute("aria-pressed",b.dataset.p===S.pos));
+  hideBtn.setAttribute("aria-pressed",S.hide);
+  const q=document.getElementById("q").value.trim().toLowerCase().normalize("NFD").replace(/\p{M}/gu,"");
+  const taken=Object.keys(S.st).length, cur=taken+1;
+  document.getElementById("cur").textContent=cur>104?"Done":cur;
+  const nx=document.getElementById("nxt"),aw=document.getElementById("away"),mp=document.getElementById("mypicks");
+  if(S.slot){const ps=myPicks(S.slot);const n=ps.find(p=>p>=cur);nx.textContent=n||"Done";aw.textContent=n?(n===cur?"you're up":`in ${n-cur} picks`):"";mp.textContent="Your picks: "+ps.join(", ")}
+  else{nx.textContent="–";aw.textContent="";mp.textContent="Choose your slot once Yahoo shows the draft order."}
+  const mine=P.filter(p=>S.st[p.r]==="m");fillSlots(mine);
+  const ps=S.slot?myPicks(S.slot):[];suggest(mine,ps.includes(cur));
+  let h="",ti=0;
+  P.forEach(p=>{
+    while(ti<TIERS.length&&p.o>=TIERS[ti][0]){if(!q&&S.pos==="ALL")h+=`<tr class="tier"><td colspan="9">${TIERS[ti][1]}<span>${TIERS[ti][2]}</span></td></tr>`;ti++}
+    const st=S.st[p.r];
+    if(S.hide&&st==="g")return;
+    if(S.pos!=="ALL"&&!p.pos.includes(S.pos))return;
+    if(q&&!p.n.toLowerCase().normalize("NFD").replace(/\p{M}/gu,"").includes(q))return;
+    const nt=NOTES[p.n];let tags="";
+    if(nt){tags=`<br><span class="tag t-${nt[0][0]}">${nt[0][1]}</span>`+(nt[1]?`<span class="note">${esc(nt[1])}</span>`:"")}
+    const acts=st?`<button data-r="${p.r}" data-a="u">Undo</button>`:`<button class="m" data-r="${p.r}" data-a="m">Mine</button><button data-r="${p.r}" data-a="g">Gone</button>`;
+    h+=`<tr class="${st==="g"?"gone":st==="m"?"mine":""}"><td class="n">${p.o}</td><td class="n">${Math.ceil(p.o/8)}</td><td class="n">${p.r}${p.o!==p.r?`<span class="mv ${p.o<p.r?"u":"d"}">${p.o<p.r?"▲":"▼"}${Math.abs(p.r-p.o)}</span>`:""}</td><td class="name">${esc(p.n)}${tags}</td><td class="pp">${p.pos.join(", ")}</td><td class="pp">${p.t}</td><td class="n fp">${fpCell(p)}</td><td class="n">${gmCell(p)}</td><td class="act">${acts}</td></tr>`;
+  });
+  document.getElementById("rows").innerHTML=h||`<tr><td colspan="9" style="color:var(--muted)">No players match.</td></tr>`;
+}
+document.getElementById("sugg").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;S.st[b.dataset.r]="m";save();render()});
+document.getElementById("rows").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;const r=b.dataset.r;if(b.dataset.a==="u")delete S.st[r];else S.st[r]=b.dataset.a;save();render()});
+render();
+</script>
+</body></html>
